@@ -230,7 +230,8 @@ class ParallelSearchAgentTest {
                     selectedUrl = result.path("url").asText();
                     message = toolMessage("fetch", "web_fetch", Map.of("urls", List.of(selectedUrl), "objective", "Summarize this documentation", "session_id", session)); finish = "tool_calls";
                 } else {
-                    fetchedExcerpt = result.path("excerpts").get(0).asText();
+                    fetchedExcerpt = result.path("excerpts").get(0).asText().lines()
+                            .filter(line -> !line.isBlank()).findFirst().orElseThrow();
                     message = Map.of("role", "assistant", "content", fetchedExcerpt);
                 }
             }
