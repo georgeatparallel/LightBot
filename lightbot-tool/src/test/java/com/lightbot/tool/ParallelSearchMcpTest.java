@@ -30,6 +30,11 @@ import static org.mockito.Mockito.*;
 class ParallelSearchMcpTest {
     private final ObjectMapper mapper = new ObjectMapper();
 
+    /**
+     * 从真实注册器取得配置，同时校验匿名默认值。
+     * @return 已注册、尚未启用的 Parallel 记录
+     * @throws Exception 请求头 JSON 无法解析时抛出
+     */
     private McpServer registeredParallel() throws Exception {
         McpServerService store = mock(McpServerService.class);
         new BuiltinMcpRegistrar(store, mapper).registerBuiltInMcpServers();
@@ -50,6 +55,11 @@ class ParallelSearchMcpTest {
         return parallel;
     }
 
+    /**
+     * 隔离数据库与 Redis，保留实际 MCP 客户端实现。
+     * @param server 注册器生成的测试记录
+     * @return 使用该记录的客户端服务
+     */
     private McpClientServiceImpl clientService(McpServer server) {
         McpServerService store = mock(McpServerService.class);
         when(store.getById(42L)).thenReturn(server);
@@ -57,13 +67,15 @@ class ParallelSearchMcpTest {
                 mock(CacheInvalidationBroadcaster.class));
     }
 
+    /** 验证内置注册不会自动启用或要求鉴权。 */
     @Test
-    void registersDisabledAnonymousServer() throws Exception {
+    void test_registerParallel_shouldBeDisabledAndAnonymous() throws Exception {
         registeredParallel();
     }
 
+    /** 验证已有记录不会被内置默认配置覆盖。 */
     @Test
-    void repeatedRegistrationPreservesSavedConfiguration() {
+    void test_repeatRegistration_shouldPreserveSavedConfiguration() {
         McpServerService store = mock(McpServerService.class);
         McpServer existing = new McpServer();
         existing.setIsBuiltin(1);
@@ -81,8 +93,9 @@ class ParallelSearchMcpTest {
         assertEquals("[\"web_fetch\"]", existing.getDisabledTools());
     }
 
+    /** 验证实际 HTTP 请求、工具参数及启用/禁用行为。 */
     @Test
-    void actualCallerSendsHeadersAndRespectsDisabledTools() throws Exception {
+    void test_actualCaller_shouldSendHeadersAndRespectDisabledTools() throws Exception {
         List<Map<String, Object>> requests = new CopyOnWriteArrayList<>();
         List<String> userAgents = new CopyOnWriteArrayList<>();
         List<String> paths = new CopyOnWriteArrayList<>();
@@ -147,14 +160,20 @@ class ParallelSearchMcpTest {
         }
     }
 
+    /**
+     * 构造本地 MCP 服务的最小工具 Schema。
+     * @param name 工具名称
+     * @return MCP tools/list 中的一项工具定义
+     */
     private Map<String, Object> tool(String name) {
         return Map.of("name", name, "description", name, "inputSchema", Map.of(
                 "type", "object", "properties", Map.of("objective", Map.of("type", "string"))));
     }
 
+    /** 验证注册配置经真实客户端匿名执行远端搜索和抓取。 */
     @Test
     @EnabledIfSystemProperty(named = "lightbot.parallel.live", matches = "true")
-    void anonymousRegisteredServerExecutesSearchAndFetch() throws Exception {
+    void test_anonymousRegisteredServer_shouldExecuteSearchAndFetch() throws Exception {
         McpServer server = registeredParallel();
         server.setStatus(CommonStatus.ACTIVE);
         McpClientServiceImpl client = clientService(server);
