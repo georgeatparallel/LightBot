@@ -34,6 +34,10 @@
 
 启动服务后，在「扩展 / MCP」中找到 `parallel-search`，启用并测试连接，
 刷新工具列表。使用已有 MCP 工具选择界面选择 `web_search` 或 `web_fetch`。
+若绑定到 Agent，先在该 Agent 的工具配置中移除内置 Tavily `web_search`，
+再绑定 `parallel-search` MCP Server；两者同名，现有运行时优先保留先加载的内置工具。
+也可在 Workflow 的 MCP 节点中指定 `parallel-search` 与对应工具名称。
+本次不改变已有工具优先级。
 请求头预设为 `{"User-Agent":"LightBot/2.1.0"}`，不要添加 Authorization 或 API Key。
 服务使用匿名免费额度，限流时稍后重试；工具说明与额度以
 [官方文档](https://docs.parallel.ai/integrations/mcp/search-mcp)为准。
